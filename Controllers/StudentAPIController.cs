@@ -16,6 +16,8 @@ namespace StudentApi.Controllers
     {
 
 
+        [Authorize(Roles = "Admin")]
+
         [HttpGet("All", Name = "GetAllStudents")] // Marks this method to respond to HTTP GET requests.
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -37,6 +39,7 @@ namespace StudentApi.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
         // Method to get all students who passed
+        [AllowAnonymous]
         public ActionResult<IEnumerable<Student>> GetPassedStudents()
 
         {
@@ -51,6 +54,9 @@ namespace StudentApi.Controllers
 
             return Ok(passedStudents); // Return the list of students who passed.
         }
+
+
+        [AllowAnonymous]
 
         [HttpGet("AverageGrade", Name = "GetAverageGrade")]
 
@@ -71,6 +77,7 @@ namespace StudentApi.Controllers
             return Ok(averageGrade);
         }
 
+        [Authorize(Roles = "Admin")]
 
         [HttpGet("{id}", Name = "GetStudentById")]
 
@@ -96,6 +103,7 @@ namespace StudentApi.Controllers
         }
 
         //for add new we use Http Post
+        [Authorize(Roles = "Admin")]
 
         [HttpPost(Name = "AddStudent")]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -115,6 +123,7 @@ namespace StudentApi.Controllers
             return CreatedAtRoute("GetStudentById", new { id = newStudent.Id }, newStudent);
 
         }
+        [Authorize(Roles = "Admin")]
 
         //here we use HttpDelete method
         [HttpDelete("{id}", Name = "DeleteStudent")]
@@ -138,6 +147,7 @@ namespace StudentApi.Controllers
             return Ok($"Student with ID {id} has been deleted.");
         }
 
+        [Authorize(Roles = "Admin")]
         //here we use http put method for update
         [HttpPut("{id}", Name = "UpdateStudent")]
         [ProducesResponseType(StatusCodes.Status200OK)]

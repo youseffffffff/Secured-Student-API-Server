@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\src\\MyProjects\\Original Projects\\01 StudentAPIServer v7\\StudentAPIServer\\StudentApi.csproj": {}
+    "C:\\src\\MyProjects\\Original Projects\\Secured-Student-API-Server\\StudentApi.csproj": {}
   },
   "projects": {
-    "C:\\src\\MyProjects\\Original Projects\\01 StudentAPIServer v7\\StudentAPIServer\\StudentApi.csproj": {
+    "C:\\src\\MyProjects\\Original Projects\\Secured-Student-API-Server\\StudentApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\src\\MyProjects\\Original Projects\\01 StudentAPIServer v7\\StudentAPIServer\\StudentApi.csproj",
+        "projectUniqueName": "C:\\src\\MyProjects\\Original Projects\\Secured-Student-API-Server\\StudentApi.csproj",
         "projectName": "StudentApi",
-        "projectPath": "C:\\src\\MyProjects\\Original Projects\\01 StudentAPIServer v7\\StudentAPIServer\\StudentApi.csproj",
+        "projectPath": "C:\\src\\MyProjects\\Original Projects\\Secured-Student-API-Server\\StudentApi.csproj",
         "packagesPath": "C:\\Users\\youse\\.nuget\\packages\\",
-        "outputPath": "C:\\src\\MyProjects\\Original Projects\\01 StudentAPIServer v7\\StudentAPIServer\\obj\\",
+        "outputPath": "C:\\src\\MyProjects\\Original Projects\\Secured-Student-API-Server\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
