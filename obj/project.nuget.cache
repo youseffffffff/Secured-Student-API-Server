@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "yzlSfA9xpNQ=",
+  "dgSpecHash": "KyFclYFEqbo=",
   "success": true,
-  "projectFilePath": "C:\\src\\MyProjects\\Original Projects\\Secured-Student-API-Server\\StudentApi.csproj",
+  "projectFilePath": "c:\\src\\MyProjects\\Original Projects\\Secured-Student-API-Server\\StudentApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\youse\\.nuget\\packages\\bcrypt.net-next\\4.1.0\\bcrypt.net-next.4.1.0.nupkg.sha512",
     "C:\\Users\\youse\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\8.0.1\\microsoft.aspnetcore.authentication.jwtbearer.8.0.1.nupkg.sha512",

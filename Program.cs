@@ -1,135 +1,118 @@
+using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.OpenApi.Models;
-
-
+using Microsoft.AspNetCore.Authorization;
 
 // Create the application builder.
-// This object is responsible for configuring services and middleware.
+// This is where we register services (DI container) and configure the app.
 var builder = WebApplication.CreateBuilder(args);
 
-
 // ===============================
-// JWT Authentication Configuration
+// 1) Authentication (JWT Bearer)
 // ===============================
-
-
-// Register authentication services in the dependency injection container.
-// JwtBearerDefaults.AuthenticationScheme tells ASP.NET Core that
-// JWT Bearer authentication will be the default authentication method.
+//
+// This tells ASP.NET Core that the API will use JWT Bearer tokens.
+// After this is configured, the middleware can validate tokens sent in:
+// Authorization: Bearer <token>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // TokenValidationParameters define how incoming JWTs will be validated.
+        // TokenValidationParameters define what "valid token" means for this API.
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            // Ensures the token was issued by a trusted issuer.
+            // Ensures the token was issued by a trusted issuer value.
             ValidateIssuer = true,
 
-            // Ensures the token is intended for this API (audience check).
+            // Ensures the token was intended for this API (audience check).
             ValidateAudience = true,
 
             // Ensures the token has not expired.
             ValidateLifetime = true,
 
-
-            // Ensures the token signature is valid and was signed by the API.
+            // Ensures the token's signature matches the signing key (prevents forgery).
             ValidateIssuerSigningKey = true,
 
-
-            // The expected issuer value (must match the issuer used when creating the JWT).
+            // Must match the issuer used when generating the JWT in the login endpoint.
             ValidIssuer = "StudentApi",
 
-
-            // The expected audience value (must match the audience used when creating the JWT).
+            // Must match the audience used when generating the JWT in the login endpoint.
             ValidAudience = "StudentApiUsers",
 
-            ClockSkew = TimeSpan.Zero,
-
-
-            // The secret key used to validate the JWT signature.
-            // This must be the same key used when generating the token.
+            // The symmetric secret key used to validate the token signature.
+            // This MUST be the same key used to sign tokens during login.
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes("THIS_IS_A_VERY_SECRET_KEY_123456")),
-
-            // Reduce clock skew to zero so token expires exactly at expiration time
+                Encoding.UTF8.GetBytes("THIS_IS_A_VERY_SECRET_KEY_123456"))
         };
     });
 
 
+
 // ===============================
-// Authorization Configuration
+// 2) Authorization (Updated)
 // ===============================
+//
+// This enables authorization features such as:
+// - [Authorize]
+// - [Authorize(Roles="Admin")]
+// - [Authorize(Policy="StudentOwnerOrAdmin")]
+builder.Services.AddAuthorization(options =>
+{
+    // Ownership policy: Student can access only their own record, Admin can access any record.
+    options.AddPolicy("StudentOwnerOrAdmin", policy =>
+        policy.Requirements.Add(new StudentOwnerOrAdminRequirement()));
+});
+
+// Register the policy handler that contains the ownership logic.
+builder.Services.AddSingleton<IAuthorizationHandler, StudentOwnerOrAdminHandler>();
 
 
-// Register authorization services.
-// This enables attributes like [Authorize] and role-based authorization.
-builder.Services.AddAuthorization();
 
-
-// Register controller support.
+// Register controller support (enables [ApiController] controllers).
 builder.Services.AddControllers();
 
-
 // ===============================
-// Swagger Configuration
+// 3) Swagger / OpenAPI
 // ===============================
-
-
-// Enables Swagger endpoint discovery.
+//
+// AddEndpointsApiExplorer discovers endpoints for Swagger generation.
 builder.Services.AddEndpointsApiExplorer();
 
-
-// Register Swagger generator and customize its behavior.
+// Configure Swagger generation and add JWT support to Swagger UI.
+// This makes Swagger show the "Authorize" button and allows sending Bearer tokens.
 builder.Services.AddSwaggerGen(options =>
 {
-    // ===============================
-    // 1) Define the JWT Bearer security scheme
-    // ===============================
-    //
-    // This tells Swagger that our API uses JWT Bearer authentication
-    // through the HTTP Authorization header.
+    // Define the "Bearer" security scheme.
+    // Swagger will use it to display an input box for Authorization header.
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        // The name of the HTTP header where the token will be sent.
+        // The header name where the JWT should be placed.
         Name = "Authorization",
 
-
-        // Indicates this is an HTTP authentication scheme.
+        // HTTP authentication scheme (Authorization header).
         Type = SecuritySchemeType.Http,
 
-
-        // Specifies the authentication scheme name.
-        // Must be exactly "Bearer" for JWT Bearer tokens.
+        // The scheme name must be "Bearer" for JWT Bearer tokens.
         Scheme = "Bearer",
 
-
-        // Optional metadata to describe the token format.
+        // Optional, but helps documentation and UI.
         BearerFormat = "JWT",
 
-
-        // Specifies that the token is sent in the request header.
+        // Token is sent in the request header.
         In = ParameterLocation.Header,
 
-
-        // Text shown in Swagger UI to guide the user.
+        // Instruction shown in Swagger UI.
         Description = "Enter: Bearer {your JWT token}"
     });
 
-
-    // ===============================
-    // 2) Require the Bearer scheme for secured endpoints
-    // ===============================
-    //
-    // This tells Swagger that endpoints protected by [Authorize]
-    // require the Bearer token defined above.
+    // Apply the Bearer scheme globally so secured endpoints in Swagger
+    // can automatically include the Authorization header after you authorize.
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                // Reference the previously defined "Bearer" security scheme.
+                // Reference the security scheme defined above by its Id: "Bearer".
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
@@ -137,48 +120,41 @@ builder.Services.AddSwaggerGen(options =>
                 }
             },
 
-
-            // No scopes are required for JWT Bearer authentication.
-            // This array is empty because JWT does not use OAuth scopes here.
+            // No specific scopes are required for JWT Bearer in this setup.
             new string[] {}
         }
     });
 });
 
-
 // Build the application.
-// After this point, services are frozen and middleware is configured.
+// After Build(), services are finalized and we configure middleware.
 var app = builder.Build();
 
-
 // ===============================
-// HTTP Request Pipeline
+// 4) Middleware Pipeline
 // ===============================
+//
+// Middleware order matters. Requests pass through middleware in the order registered.
 
-
-// Enable Swagger only in development environment.
+// Enable Swagger UI only in development environment.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-
 // Redirect HTTP requests to HTTPS.
 app.UseHttpsRedirection();
 
-
-// IMPORTANT:
-// Authentication middleware must run BEFORE authorization middleware.
-// Authentication identifies the user.
-// Authorization decides what the user is allowed to do.
+// Authentication must run before authorization.
+// Authentication identifies the user (reads token and builds User identity).
 app.UseAuthentication();
+
+// Authorization checks access rules (e.g., [Authorize], roles, policies).
 app.UseAuthorization();
 
-
-// Map controller routes (e.g., /api/Students, /api/Auth).
+// Map controller routes (e.g., /api/Auth/login, /api/Students/All).
 app.MapControllers();
 
-
-// Start the application.
+// Start the web application.
 app.Run();

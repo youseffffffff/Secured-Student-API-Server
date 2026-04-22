@@ -1,25 +1,22 @@
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc; 
 using StudentApi.Models;
 using StudentApi.DataSimulation;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
-namespace StudentApi.Controllers
+namespace StudentApi.Controllers 
 {
-
-    [Authorize]
+    [Authorize] //This means: Every endpoint inside this controller, Requires a valid JWT
     [ApiController] // Marks the class as a Web API controller with enhanced features.
-                    //  [Route("[controller]")] // Sets the route for this controller to "students", based on the controller name.
+  //  [Route("[controller]")] // Sets the route for this controller to "students", based on the controller name.
     [Route("api/Students")]
 
     public class StudentsController : ControllerBase // Declare the controller class inheriting from ControllerBase.
     {
 
-
-        [Authorize(Roles = "Admin")]
-
-        [HttpGet("All", Name = "GetAllStudents")] // Marks this method to respond to HTTP GET requests.
+        [Authorize(Roles = "Admin")] //This will allow admin only to access the endpoint
+        [HttpGet("All", Name ="GetAllStudents")] // Marks this method to respond to HTTP GET requests.
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
@@ -27,20 +24,20 @@ namespace StudentApi.Controllers
         {
             //StudentDataSimulation.StudentsList.Clear();
 
-            if (StudentDataSimulation.StudentsList.Count == 0)
+            if (StudentDataSimulation.StudentsList.Count == 0) 
             {
                 return NotFound("No Students Found!");
             }
             return Ok(StudentDataSimulation.StudentsList); // Returns the list of students.
         }
 
-        [HttpGet("Passed", Name = "GetPassedStudents")]
+        [AllowAnonymous] //Because you have [Authorize] at controller level, these endpoints must override it with [AllowAnonymous]
+        [HttpGet("Passed",Name = "GetPassedStudents")]
 
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
         // Method to get all students who passed
-        [AllowAnonymous]
         public ActionResult<IEnumerable<Student>> GetPassedStudents()
 
         {
@@ -56,9 +53,7 @@ namespace StudentApi.Controllers
             return Ok(passedStudents); // Return the list of students who passed.
         }
 
-
-        [AllowAnonymous]
-
+        [AllowAnonymous] //Because you have [Authorize] at controller level, these endpoints must override it with [AllowAnonymous]
         [HttpGet("AverageGrade", Name = "GetAverageGrade")]
 
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -67,7 +62,7 @@ namespace StudentApi.Controllers
         public ActionResult<double> GetAverageGrade()
         {
 
-            //   StudentDataSimulation.StudentsList.Clear();
+         //   StudentDataSimulation.StudentsList.Clear();
 
             if (StudentDataSimulation.StudentsList.Count == 0)
             {
@@ -78,58 +73,50 @@ namespace StudentApi.Controllers
             return Ok(averageGrade);
         }
 
+
+
         // This endpoint retrieves a single student by ID.
-        // It is protected by authentication at the controller level.
-        // Authorization logic inside this method enforces ownership rules.
+        // It uses policy-based authorization to enforce ownership rules.
         [HttpGet("{id}", Name = "GetStudentById")]
-        public ActionResult<Student> GetStudentById(int id)
+        public async Task<ActionResult<Student>> GetStudentById(
+            int id,
+
+            // IAuthorizationService is injected directly into the action.
+            // It allows the controller to ask the authorization system
+            // whether the current user is allowed to access a specific resource.
+            [FromServices] IAuthorizationService authorizationService)
         {
-            // Validate the incoming route parameter.
-            // IDs less than 1 are not valid and indicate a bad request.
+            // Validate the route parameter.
+            // IDs less than 1 are considered invalid input.
             if (id < 1)
                 return BadRequest("Invalid student id.");
 
-
-            // Attempt to find the requested student in the data store.
-            // This represents the resource the user is trying to access.
+            // Retrieve the student record being requested.
+            // This represents the resource the user wants to access.
             var student = StudentDataSimulation.StudentsList
                 .FirstOrDefault(s => s.Id == id);
 
-
             // If no student exists with this ID, return 404 Not Found.
-            // This prevents leaking information about valid IDs.
+            // This avoids exposing internal data or assumptions.
             if (student == null)
                 return NotFound("Student not found.");
 
+            // Ask the authorization system to evaluate the "StudentOwnerOrAdmin" policy.
+            //
+            // Parameters:
+            // - User: the authenticated user (from the validated JWT)
+            // - id: the resource being protected (student ID)
+            // - "StudentOwnerOrAdmin": the policy name
+            var authResult = await authorizationService.AuthorizeAsync(
+                User,
+                id,
+                "StudentOwnerOrAdmin");
 
-            // Extract the authenticated user's ID from the JWT.
-            // This value was placed into the token during login
-            // and validated by the JWT authentication middleware.
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-
-            // Extract the authenticated user's role from the JWT.
-            // Typical values are "Student" or "Admin".
-            var userRole = User.FindFirstValue(ClaimTypes.Role);
-
-
-            // Convert the authenticated user ID from string to integer.
-            // This represents the identity of the caller.
-            int authenticatedStudentId = int.Parse(userId);
-
-
-            // Determine whether the current user is an Admin.
-            // Admins are allowed to access any student record.
-            bool isAdmin = userRole == "Admin";
-
-
-            // Ownership check:
-            // If the user is NOT an admin and is trying to access
-            // a student record that does not belong to them,
-            // the request is forbidden.
-            if (!isAdmin && authenticatedStudentId != id)
-                return Forbid(); // Returns HTTP 403 Forbidden
-
+            // If the policy evaluation failed, the user is authenticated
+            // but not authorized to access this resource.
+            // This correctly returns HTTP 403 Forbidden.
+            if (!authResult.Succeeded)
+                return Forbid(); // 403 Forbidden
 
             // If all checks pass:
             // - The user is authenticated
@@ -140,9 +127,12 @@ namespace StudentApi.Controllers
         }
 
 
-        //for add new we use Http Post
-        [Authorize(Roles = "Admin")]
 
+
+
+
+        //for add new we use Http Post
+        [Authorize(Roles = "Admin")] //This will allow admin only to access the endpoint
         [HttpPost(Name = "AddStudent")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -156,14 +146,14 @@ namespace StudentApi.Controllers
 
             newStudent.Id = StudentDataSimulation.StudentsList.Count > 0 ? StudentDataSimulation.StudentsList.Max(s => s.Id) + 1 : 1;
             StudentDataSimulation.StudentsList.Add(newStudent);
-
+            
             //we dont return Ok here,we return createdAtRoute: this will be status code 201 created.
             return CreatedAtRoute("GetStudentById", new { id = newStudent.Id }, newStudent);
 
         }
-        [Authorize(Roles = "Admin")]
 
         //here we use HttpDelete method
+        [Authorize(Roles = "Admin")] //This will allow admin only to access the endpoint
         [HttpDelete("{id}", Name = "DeleteStudent")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -185,8 +175,8 @@ namespace StudentApi.Controllers
             return Ok($"Student with ID {id} has been deleted.");
         }
 
-        [Authorize(Roles = "Admin")]
         //here we use http put method for update
+        [Authorize(Roles = "Admin")] //This will allow admin only to access the endpoint
         [HttpPut("{id}", Name = "UpdateStudent")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
