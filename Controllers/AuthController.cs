@@ -6,9 +6,10 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 
-
+// push test
 
 namespace StudentApi.Controllers
 {
@@ -20,6 +21,8 @@ namespace StudentApi.Controllers
     {
         // This endpoint handles user login.
         // It verifies credentials and returns a JWT token if login succeeds.
+        [AllowAnonymous]
+
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
