@@ -75,6 +75,10 @@ namespace StudentApi.Controllers
 
 
 
+
+
+
+
         // This endpoint retrieves a single student by ID.
         // It uses policy-based authorization to enforce ownership rules.
         [HttpGet("{id}", Name = "GetStudentById")]

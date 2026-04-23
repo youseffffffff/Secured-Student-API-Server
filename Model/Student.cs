@@ -11,5 +11,11 @@
         public string Email { get; set; }
         public string PasswordHash { get; set; }
         public string Role { get; set; }
+
+        // Refresh token fields
+        public string RefreshTokenHash { get; set; }
+        public DateTime? RefreshTokenExpiresAt { get; set; }
+        public DateTime? RefreshTokenRevokedAt { get; set; }
+
     }
 }
