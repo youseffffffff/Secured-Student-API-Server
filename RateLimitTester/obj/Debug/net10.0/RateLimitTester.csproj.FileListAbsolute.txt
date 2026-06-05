@@ -1,0 +1,15 @@
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\bin\Debug\net10.0\RateLimitTester.exe
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\bin\Debug\net10.0\RateLimitTester.deps.json
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\bin\Debug\net10.0\RateLimitTester.runtimeconfig.json
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\bin\Debug\net10.0\RateLimitTester.dll
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\bin\Debug\net10.0\RateLimitTester.pdb
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\RateLimitTester.GeneratedMSBuildEditorConfig.editorconfig
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\RateLimitTester.AssemblyInfoInputs.cache
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\RateLimitTester.AssemblyInfo.cs
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\RateLimitTester.csproj.CoreCompileInputs.cache
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\RateLimitTester.sourcelink.json
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\RateLimitTester.dll
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\refint\RateLimitTester.dll
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\RateLimitTester.pdb
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\RateLimitTester.genruntimeconfig.cache
+C:\src\MyProjects\Original Projects\Secured-Student-API-Server\RateLimitTester\obj\Debug\net10.0\ref\RateLimitTester.dll

@@ -3,10 +3,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using System.Security.Claims;
 
 // Create the application builder.
 // This is where we register services (DI container) and configure the app.
 var builder = WebApplication.CreateBuilder(args);
+
+
+
+
+var secretKey = builder.Configuration["JWT_SECRET_KEY"];
+
+if (string.IsNullOrWhiteSpace(secretKey))
+{
+    throw new Exception("JWT secret key is not configured.");
+}
 
 // ===============================
 // 1) Authentication (JWT Bearer)
@@ -39,10 +52,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             // Must match the audience used when generating the JWT in the login endpoint.
             ValidAudience = "StudentApiUsers",
 
+            ClockSkew = TimeSpan.Zero, // Optional: reduce default clock skew for token expiration
+
+            
             // The symmetric secret key used to validate the token signature.
             // This MUST be the same key used to sign tokens during login.
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes("THIS_IS_A_VERY_SECRET_KEY_123456"))
+                Encoding.UTF8.GetBytes(secretKey))
+
+
+
         };
     });
 
@@ -66,6 +85,26 @@ builder.Services.AddAuthorization(options =>
 // Register the policy handler that contains the ownership logic.
 builder.Services.AddSingleton<IAuthorizationHandler, StudentOwnerOrAdminHandler>();
 
+
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("AuthLimiter", httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+});
 
 
 // Register controller support (enables [ApiController] controllers).
@@ -146,12 +185,49 @@ if (app.Environment.IsDevelopment())
 // Redirect HTTP requests to HTTPS.
 app.UseHttpsRedirection();
 
+
+app.UseRateLimiter();
+
+app.Use(async (context, next) =>
+{
+    await next();
+
+    if (context.Response.StatusCode == StatusCodes.Status429TooManyRequests)
+    {
+        await context.Response.WriteAsync("Too many login attempts. Please try again later.");
+    }
+});
+
+
 // Authentication must run before authorization.
 // Authentication identifies the user (reads token and builds User identity).
 app.UseAuthentication();
 
 // Authorization checks access rules (e.g., [Authorize], roles, policies).
 app.UseAuthorization();
+
+app.Use(async (context, next) =>
+{
+    await next();
+
+
+    if (context.Response.StatusCode == StatusCodes.Status403Forbidden)
+    {
+        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous";
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var path = context.Request.Path.ToString();
+
+
+        // ✅ Centralized security log for authorization abuse
+        app.Logger.LogWarning(
+            "Forbidden access. UserId={UserId}, Path={Path}, IP={IP}",
+            userId,
+            path,
+            ip
+        );
+    }
+});
+
 
 // Map controller routes (e.g., /api/Auth/login, /api/Students/All).
 app.MapControllers();
